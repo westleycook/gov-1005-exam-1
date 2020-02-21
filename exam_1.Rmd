@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
 library(janitor)
+library(gt)
 
 ```
 
@@ -176,11 +177,71 @@ joined %>%
 
 ```
 
-
 ## Question 3
 
+```{r question3, echo=FALSE}
 
+paris_experiment <- paris %>% 
+  filter(kind == "Ratification") %>% 
+  select(name, emissions) %>% 
+  mutate(emissions_treatment = emissions) %>% 
+  rename(emissions_control = emissions) %>% 
+  mutate(emissions_treatment = ifelse(startsWith(name, "A") |
+                                        startsWith(name, "E") |
+                                        startsWith(name, "I") |
+                                        startsWith(name, "O") |
+                                        startsWith(name, "U"),
+                                      emissions_treatment,
+                                      "?")) %>% 
+  mutate(emissions_control = ifelse(startsWith(name, "A") |
+                                        startsWith(name, "E") |
+                                        startsWith(name, "I") |
+                                        startsWith(name, "O") |
+                                        startsWith(name, "U"),
+                                      "?",
+                                      emissions_control))
+ 
+paris_experiment %>% 
+  gt() %>% 
+  
+  tab_header(title = "Potential Outcomes for Paris Experiment",
+             subtitle = "For Selected Countries") %>% 
+  
+# Adding spanner label for columns eval_under_control and eval_under_treatment  
+  
+  tab_spanner(label = "Potential Outcomes",
+              columns = vars(emissions_control,
+                             emissions_treatment)
+              ) %>% 
+  
+# Adding footnote as shown in the table I'm replicating; had to specify "title"
+# within cells_title() to get a warning message to disappear.
+  
+  tab_footnote(footnote = "Treatment is receiving $1 billion to fight climate change, and was given to all countries whose names begin with vowels",
+               locations = cells_title("title")
+               ) %>% 
+  
+  tab_footnote(footnote = "One country is shown for each letter of the alphabet",
+               locations = cells_title("subtitle")
+               ) %>% 
+  
+# Giving the columns pretty labels  
+  
+  cols_label(name = "Country",
+             emissions_control = "Under Control",
+             emissions_treatment = "Under Treatment") %>% 
+  
+# Center-aligning the values in each column  
+  
+  cols_align(align = "center",
+             columns = vars(emissions_control,
+                            emissions_treatment))
 
+```
+
+Let’s imagine that we’re going to try a new experiment on the Paris data that we first uploaded. In our experiment, we give all the countries whose name starts with a vowel $1 billion to fight climate change. The treatment is receiving the money; the control is not receiving the money. The sample is restricted to only countries that have ratified the Paris treaty (You should have 177 countries). The outcome is emissions.
+
+Using the gt package, create a potential outcomes table which captures the setup associated with our experiment. This is a very similar process to what you did on problem set 3, although you’ll first have to assign treatment based on the rules above. In your table, you do not need to show every observation of the dataset, but you should show enough to prove that you assigned treatment correctly. The point of this question is for you to demonstrate that you understand the potential outcomes framework.
 
 
 
