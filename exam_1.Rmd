@@ -75,7 +75,9 @@ number_stan <- paris %>%
 
 ```{r read-co2-data, include=FALSE}
 
-emissions <- read_csv("raw-data/WB_co2_emisions.csv", skip = 4) %>% 
+emissions <- read_csv("raw-data/WB_co2_emisions.csv", 
+                      skip = 4,
+                      col_types = cols()) %>% 
   clean_names()
 
 ```
@@ -99,10 +101,87 @@ avg2000 <- emissions %>%
   round(digits = 2)
 
 ```
-
-
+  
 6. The average emissions in 2000 was **`r avg2000`** metric tons per capita.
 
 ## Question 2
 
+```{r question2, echo=FALSE}
+
+emissions_tidy <- emissions %>% 
+pivot_longer(cols = c(x1960:x2019),
+             names_to = "year",
+             values_to = "emissions_per_captita",
+             names_prefix = "x") %>% 
+  type_convert(col_types = cols())
+  
+
+joined <- emissions_tidy %>% 
+  left_join(paris,
+             by = c("year", 
+                    "country_code" = "code"))
+
+# x %>% 
+#   filter(year == "1960") %>% 
+#   arrange(emissions_per_captita)
+# 
+# x %>% 
+#   filter(year == "1960") %>% 
+#   arrange(desc(emissions_per_captita))
+
+date <- joined %>%
+  filter(date_of_effect == "2016-11-04") %>%
+  slice(1) %>%
+  pull(date_of_effect)
+
+joined %>% 
+  filter(country_name == "United States" |
+           country_name == "Canada" |
+           country_name == "Mexico",
+         emissions_per_captita != "NA") %>% 
+  ggplot(aes(x = year,
+             y = emissions_per_captita,
+             color = country_name,
+             group = country_name)) +
+  geom_point() +
+  geom_line() +
+  geom_vline(xintercept = as.numeric(format(date, "%Y")),
+             linetype = "dotted") +
+  labs(title = "CO2 Emissions of North American Countries, 1960 - 2014",
+       y = "Metric Tons Per Capita",
+       x = "Year") +
+  scale_color_discrete(name = "Country",
+                       breaks = c("United States",
+                                  "Canada",
+                                  "Mexico")) +
+  scale_x_continuous(breaks = seq(1960,
+                                  2020,
+                                  by = 10),
+                     labels = c("1960",
+                                "1970",
+                                "1980",
+                                "1990",
+                                "2000",
+                                "2010",
+                                "2020")
+                     ) +
+  theme_classic() +
+  annotate("text",
+           x = 2016, 
+           y = 9, 
+           label = "Year Paris Accord\nTook Effect (2016)",
+           color = "gray28",
+           size =3.5,
+           angle = 90)
+
+```
+
+
 ## Question 3
+
+
+
+
+
+
+
