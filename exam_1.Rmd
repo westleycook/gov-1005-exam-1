@@ -7,23 +7,101 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(janitor)
+
+```
+
+```{r read-paris-data, include=FALSE}
+
+paris <- read_csv("raw-data/paris.csv") %>% 
+  clean_names()
+
 ```
 
 ## Question 1
 
-1. The highest emissions are from the country X.
+```{r question1.1, echo=FALSE}
 
-2. The number of countries that have neither ratified nor approved of the treaty is X. (Acceptance and accession do not count as approval).
+country <- paris %>% 
+  arrange(desc(emissions)) %>% 
+  slice(1) %>% 
+  pull(name)
 
-3. The longest number of days between signature and ratification (for a country that has successfully ratified) is X days.
+```
 
-4. The number of ratifying countries whose name ends with “stan” is X.
+1. The highest emissions are from the country **`r country`**.
 
-Now access World Bank emissions data in the exam 1 folder on canvas. Download a copy of this data from the provided link, create a directory named “raw-data” within your project, and move the data (which should be called “WB_co2_emissions.csv”) to that directory. Commit those changes. Read in the data, clean the variable names using janitor, and then answer the following Mad Libs.
+```{r question1.2, echo=FALSE}
 
-5. In 1960, the country with the highest emissions was X.
+number_countries <- paris %>% 
+  filter(kind != "Ratification") %>% 
+  filter(kind != "Approval") %>% 
+  count() %>% 
+  pull(n)
 
-6. The average emissions in 2000 was X metric tons per capita. (Round so that there are only two digits after the decimal point.)
+```
+
+2. The number of countries that have neither ratified nor approved of the treaty
+is **`r number_countries`**.
+*This number includes only countries who indicated acceptance or accession.*
+
+```{r question1.3, echo=FALSE}
+
+longest_days <- paris %>% 
+  mutate(gap = ratification - signature) %>% 
+  arrange(desc(gap)) %>% 
+  slice(1) %>% 
+  pull(gap)
+  
+```
+
+3. The longest number of days between signature and ratification (for a country
+that has successfully ratified) is **`r longest_days`** days.
+
+```{r question1.4, echo=FALSE}
+
+number_stan <- paris %>% 
+  filter(str_detect(name, "stan"),
+         kind == "Ratification") %>% 
+  count() %>% 
+  pull(n)
+
+```
+
+4. The number of ratifying countries whose name ends with “stan” is 
+**`r number_stan`**.
+
+```{r read-co2-data, include=FALSE}
+
+emissions <- read_csv("raw-data/WB_co2_emisions.csv", skip = 4) %>% 
+  clean_names()
+
+```
+
+```{r question1.5, echo=FALSE}
+
+highest_1960 <- emissions %>% 
+  arrange(desc(x1960)) %>% 
+  slice(1) %>% 
+  pull(country_name)
+
+```
+
+5. In 1960, the country with the highest emissions was **`r highest_1960`**.
+
+```{r question1.6, echo=FALSE}
+
+avg2000 <- emissions %>% 
+  summarize(avg_2000 = mean(x2000, na.rm = TRUE)) %>% 
+  pull(avg_2000) %>% 
+  round(digits = 2)
+
+```
+
+
+6. The average emissions in 2000 was **`r avg2000`** metric tons per capita.
 
 ## Question 2
 
