@@ -8,6 +8,10 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
+# Loading the three packages I know I'll need to use at various points;
+# tidyverse for its dplyr and ggplot2 packages, janitor to clean names after
+# reading in data, and gt to make a table on question three
+
 library(tidyverse)
 library(janitor)
 library(gt)
@@ -15,6 +19,9 @@ library(gt)
 ```
 
 ```{r read-paris-data, include=FALSE}
+
+# Reading in paris data (after making the "raw-data" subdirectory and moving the
+# .csv file there) and running clean_names() just to be safe
 
 paris <- read_csv("raw-data/paris.csv") %>% 
   clean_names()
@@ -25,22 +32,54 @@ paris <- read_csv("raw-data/paris.csv") %>%
 
 ```{r question1.1, echo=FALSE}
 
-country <- paris %>% 
+# This r chunk assigns two objects to place in-line for mad lib 1.
+
+# Arranging the paris data in descending order of emissions, slicing the first
+# row and pulling the name column to get the country name.
+
+in_country <- paris %>% 
   arrange(desc(emissions)) %>% 
   slice(1) %>% 
   pull(name)
 
+# I realized after doing the above that the sentence "the highest emissions are
+# from [country]" would be more meaningful with a bit more context (without
+# context, one might misunderstand the sentence to mean something like "the
+# highest *average* emissions) so I ran the same code but pulled the year column
+# this time and added it to the end of the mad lib to clarify that the highest
+# single-year emissions in the data set came from China in 2005.
+
+in_year <- paris %>% 
+  arrange(desc(emissions)) %>% 
+  slice(1) %>% 
+  pull(year)
+
 ```
 
-1. The highest emissions are from the country **`r country`**.
+1. The highest emissions are from the country **`r in_country`** in
+**`r in_year`**.
 
 ```{r question1.2, echo=FALSE}
+
+# This r chunk assigns an object to place in-line for mad lib 2.
+
+# Filtering paris once to take out the ratifying countries, then again to take
+# out the approving countries. The resulting data was small enough that I could
+# look through the 9 rows to see that all of the countries left had indicated
+# either acceptance or accession, and that the only NA values left were in the
+# signature column for the two countries indicating accession. I figured that
+# the signature probably wasn't required for countries indicating accession, and
+# thus left those two countries in the total count.
 
 number_countries <- paris %>% 
   filter(kind != "Ratification") %>% 
   filter(kind != "Approval") %>% 
   count() %>% 
   pull(n)
+
+# I also added an explanatory note in italics which will show up on the finished
+# .html file, saying what it means for a country in this dataset to have neither
+# ratified nor approved the treaty.
 
 ```
 
@@ -49,6 +88,22 @@ is **`r number_countries`**.
 *This number includes only countries who indicated acceptance or accession.*
 
 ```{r question1.3, echo=FALSE}
+
+# This r chunk assigns an object to place in-line for mad lib 3.
+
+# This one tripped me up for a little bit, because I'd originally used
+# read.csv() instead of read_csv() to read in the paris data, and it made the
+# ratification and signature columns factors instead of dates. I had a hard time
+# converting them into the file type I wanted, but eventually figured out via
+# google that read_csv() wouldn't create that problem for me. Once I got the
+# columns to be the appropriate type, the rest was easy.
+
+# Filtering for just the ratifying countries, then creating a new variable
+# ("gap") to show the number of days between signature and ratification for each
+# ratifying country (couldn't do this with these variables when they were
+# factors, but can do it easily with dates; data type matters!). Arranging the
+# data in descending "gap" order to find the highest value, then slicing the
+# first row and pulling gap.
 
 longest_days <- paris %>% 
   filter(kind == "Ratification") %>% 
@@ -64,6 +119,16 @@ that has successfully ratified) is **`r longest_days`** days.
 
 ```{r question1.4, echo=FALSE}
 
+# This r chunk assigns an object to place in-line for mad lib 4.
+
+# Filtering the paris data for countries whose name contains "stan" (because I
+# didn't know how to limit the str_detect() function to just those countries
+# whose names END with "stan"). But the result of that filter was just seven
+# rows, so I looked at all of them and manually checked that they all ended in
+# "stan" (rather than have a "stan" somewhere in their name). At that point it
+# was easy to pipe the filter to a count() function to tell me the number of
+# rows, and pull the number of rows.
+
 number_stan <- paris %>% 
   filter(str_detect(name, "stan"),
          kind == "Ratification") %>% 
@@ -77,6 +142,21 @@ number_stan <- paris %>%
 
 ```{r read-co2-data, include=FALSE}
 
+# This r chunk reads in the WB co2 emissions data.
+
+# In order to figure out how many lines to skip to get the first rows of actual
+# data (which had column names) at the top, I first read in the data without
+# skipping any lines and used glimpse() and head() to see in what row the column
+# names were located; I then added skip = 4 to the read_csv() function to cut
+# out the unnecessary rows. I also used tail() to make sure there weren't rows
+# at the bottom which I wouldn't need.
+
+# I added the col_types = cols() argument later, in order to make the message
+# "Parsed with..." go away in the output (this maybe wasn't necessary, since I'm
+# using include=FALSE in the r chunk, but I thought it was good practice).
+
+# Used clean_names() to fix the numeric column names.
+
 emissions <- read_csv("raw-data/WB_co2_emisions.csv", 
                       skip = 4,
                       col_types = cols()) %>% 
@@ -85,6 +165,8 @@ emissions <- read_csv("raw-data/WB_co2_emisions.csv",
 ```
 
 ```{r question1.5, echo=FALSE}
+
+# 
 
 highest_1960 <- emissions %>% 
   arrange(desc(x1960)) %>% 
