@@ -21,7 +21,7 @@ paris <- read_csv("raw-data/paris.csv") %>%
 
 ```
 
-## Question 1
+### Question 1
 
 ```{r question1.1, echo=FALSE}
 
@@ -51,6 +51,7 @@ is **`r number_countries`**.
 ```{r question1.3, echo=FALSE}
 
 longest_days <- paris %>% 
+  filter(kind == "Ratification") %>% 
   mutate(gap = ratification - signature) %>% 
   arrange(desc(gap)) %>% 
   slice(1) %>% 
@@ -105,7 +106,9 @@ avg2000 <- emissions %>%
   
 6. The average emissions in 2000 was **`r avg2000`** metric tons per capita.
 
-## Question 2
+<br>
+
+### Question 2
 
 ```{r question2, echo=FALSE}
 
@@ -148,7 +151,7 @@ joined %>%
   geom_line() +
   geom_vline(xintercept = as.numeric(format(date, "%Y")),
              linetype = "dotted") +
-  labs(title = "CO2 Emissions of North American Countries, 1960 - 2014",
+  labs(title = "   CO2 Emissions of North American Countries, 1960 - 2014",
        y = "Metric Tons Per Capita",
        x = "Year") +
   scale_color_discrete(name = "Country",
@@ -169,7 +172,7 @@ joined %>%
   theme_classic() +
   annotate("text",
            x = 2016, 
-           y = 9, 
+           y = 9.5, 
            label = "Year Paris Accord\nTook Effect (2016)",
            color = "gray28",
            size =3.5,
@@ -177,7 +180,33 @@ joined %>%
 
 ```
 
-## Question 3
+<br>
+
+### Question 3
+
+#### Potential Outcomes under the Rubin Causal Framework
+
+The table below shows potential outcomes under the Rubin Causal Framework for
+countries which ratified the Paris Accord. Suppose we had run an experiment in
+which we assigned a treatment to all countries whose name begins with a vowel:
+we gave each of them $1 billion to fight climate change.
+
+(Assigning treatment to countries whose name begins with a
+vowel may not be a very good random assignment mechanism and may even compromise
+the results of our experiment, since there are far more countries whose names
+begin with consonants and ideally we’d have ~50% of countries receiving
+treatment and the remaining ~50% in the control group; nevertheless, suppose we
+used it.)
+
+The causal effect we are trying to measure is the difference in emissions for a
+given country when it receives $1 billion compared to the same country when it
+does *not* receive $1 billion. Measuring this causal effect is difficult,
+because we only know one value per country: as you see in the table (in which
+unknown values are marked by “?”) emissions for a “treated” country are unknown
+in the “Control” column and vice versa. However, by making assumptions to “fill
+in” the unknown values, we can approximate the causal effect.
+
+<br>
 
 ```{r question3, echo=FALSE}
 
@@ -200,11 +229,35 @@ paris_experiment <- paris %>%
                                         startsWith(name, "U"),
                                       "?",
                                       emissions_control))
- 
-paris_experiment %>% 
+
+
+paris_experiment %>%
+  filter(name == "Afghanistan" |
+           name == "Bahamas" |
+           name == "Cabo Verde" |
+           name == "Democratic People's Repulbic of Korea" |
+           name == "Ecuador" |
+           name == "Finland" |
+           name == "Gabon" |
+           name == "Haiti" |
+           name == "India" |
+           name == "Jamaica" |
+           name == "Kazakhstan" |
+           name == "Lao People's Democratic Republic" |
+           name == "Madagascar" |
+           name == "Namibia" |
+           name == "Oman" |
+           name == "Pakistan" |
+           name == "Qatar" |
+           name == "Republic of Korea" |
+           name == "Samoa" |
+           name == "Tajikistan" |
+           name == "Uganda" |
+           name == "Vanuatu" |
+           name == "Zambia") %>% 
   gt() %>% 
-  
-  tab_header(title = "Potential Outcomes for Paris Experiment",
+  tab_header(title = "Potential Outcomes for Paris Experiment on Emissions and 
+             Climate Change",
              subtitle = "For Selected Countries") %>% 
   
 # Adding spanner label for columns eval_under_control and eval_under_treatment  
@@ -217,19 +270,22 @@ paris_experiment %>%
 # Adding footnote as shown in the table I'm replicating; had to specify "title"
 # within cells_title() to get a warning message to disappear.
   
-  tab_footnote(footnote = "Treatment is receiving $1 billion to fight climate change, and was given to all countries whose names begin with vowels",
-               locations = cells_title("title")
+  tab_footnote(footnote = "Treatment is receiving $1 billion to fight climate 
+               change, and was given to all countries whose names begin with 
+               vowels",
+               locations = cells_column_labels()
                ) %>% 
   
-  tab_footnote(footnote = "One country is shown for each letter of the alphabet",
+  tab_footnote(footnote = "Only one country is shown for each letter of the 
+               alphabet",
                locations = cells_title("subtitle")
                ) %>% 
   
 # Giving the columns pretty labels  
   
   cols_label(name = "Country",
-             emissions_control = "Under Control",
-             emissions_treatment = "Under Treatment") %>% 
+             emissions_control = "Emissions Under Control",
+             emissions_treatment = "Emissions Under Treatment") %>% 
   
 # Center-aligning the values in each column  
   
@@ -238,11 +294,3 @@ paris_experiment %>%
                             emissions_treatment))
 
 ```
-
-Let’s imagine that we’re going to try a new experiment on the Paris data that we first uploaded. In our experiment, we give all the countries whose name starts with a vowel $1 billion to fight climate change. The treatment is receiving the money; the control is not receiving the money. The sample is restricted to only countries that have ratified the Paris treaty (You should have 177 countries). The outcome is emissions.
-
-Using the gt package, create a potential outcomes table which captures the setup associated with our experiment. This is a very similar process to what you did on problem set 3, although you’ll first have to assign treatment based on the rules above. In your table, you do not need to show every observation of the dataset, but you should show enough to prove that you assigned treatment correctly. The point of this question is for you to demonstrate that you understand the potential outcomes framework.
-
-
-
-
