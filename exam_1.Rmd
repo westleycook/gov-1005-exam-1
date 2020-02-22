@@ -263,11 +263,14 @@ date <- joined %>%
   pull(date_of_effect)
 
 # The following code makes a plot of emissions per capita for the three North
-# American countries from 1960-2014
+# American countries from 1960-2014. I was inspired by the example plot in the
+# exam question prompt, but wanted to spice it up by adding a few countries for
+# comparison. I thought looking at all three countries in North America
+# side-by-side would be interesting.
 
 joined %>% 
   
-# Filtering for the three countries I want, and taking out observations were
+# Filtering for the three countries I want, and taking out observations where
 # emissions_per_capita is NA
   
   filter(country_name == "United States" |
@@ -278,14 +281,15 @@ joined %>%
 # Plotting emissions by year, grouping and coloring by country; the group =
 # country_name is important for when I add a line to the points
   
-    ggplot(
-      aes(x = year,
-          y = emissions_per_captita,
-          color = country_name,
-          group = country_name)
-      ) +
+  ggplot(
+    aes(x = year,
+        y = emissions_per_captita,
+        color = country_name,
+        group = country_name)
+    ) +
   
-# Making it a scatterplot and connecting the dots by country  
+# Making it a scatterplot and connecting the dots by country, via the 
+# group = country_name argument above
   
   geom_point() +
   geom_line() +
@@ -306,7 +310,7 @@ joined %>%
        y = "Metric Tons Per Capita",
        x = "Year") +
   
-# Adding a nice-looking name for the legend and changing the legend order to it
+# Adding a nice-looking name for the legend and changing the legend order so it
 # matches the order of the lines (from highest emissions to lowest)
   
   scale_color_discrete(name = "Country",
@@ -315,7 +319,7 @@ joined %>%
                                   "Mexico")
                        ) +
   
-# Customizing the x axis in size and adding labels for every decade (the default
+# Customizing the x axis size and adding labels for every decade (the default
 # labels and spacing wasn't quite as clear as I wanted to be)
   
   scale_x_continuous(breaks = seq(1960,
@@ -409,8 +413,8 @@ paris_experiment <- paris %>%
                                       "?")
          ) %>% 
   
-# I then modify the function slightly to insert "?" into the emissions_control
-# column for all countries whose name DOES start with a vowel.
+# I then modify slightly the function from above to also insert "?" into the
+# emissions_control column for all countries whose name DOES start with a vowel.
   
   mutate(emissions_control = ifelse(startsWith(name, "A") |
                                         startsWith(name, "E") |
