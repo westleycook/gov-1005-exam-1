@@ -159,14 +159,22 @@ number_stan <- paris %>%
 
 emissions <- read_csv("raw-data/WB_co2_emisions.csv", 
                       skip = 4,
-                      col_types = cols()) %>% 
+                      col_types = cols()
+                      ) %>% 
   clean_names()
 
 ```
 
 ```{r question1.5, echo=FALSE}
 
-# 
+# This r chunk assigns an object to place in-line for mad lib 5.
+
+# Same process here as was used above on similar questions. The fact that each
+# year was its own column made this particular question one step shorter than it
+# would've been otherwise, because I just arranged by descending order of x1960
+# instead of having to first filter for year == 1960 and then arranging by
+# descending order of emissions. (But I get that tidy data is better to work
+# with for most other questions!)
 
 highest_1960 <- emissions %>% 
   arrange(desc(x1960)) %>% 
@@ -179,14 +187,23 @@ highest_1960 <- emissions %>%
 
 ```{r question1.6, echo=FALSE}
 
-avg2000 <- emissions %>% 
-  summarize(avg_2000 = mean(x2000, na.rm = TRUE)) %>% 
-  pull(avg_2000) %>% 
+# This r chunk assigns an object to place in-line for mad lib 6.
+
+# Same overall process here as in other mad lib chunks (pulling a value and
+# assigning it to an object). The differences this time were that I used
+# summarize() create a new variable (avg2000) taking the mean of all values in
+# the x2000 column (using na.rm = TRUE to discount the NA values), and that I
+# used the round() function to trim the mean to just two digits after the
+# decimal point.
+
+avg_in_2000 <- emissions %>% 
+  summarize(avg2000 = mean(x2000, na.rm = TRUE)) %>% 
+  pull(avg2000) %>% 
   round(digits = 2)
 
 ```
   
-6. The average emissions in 2000 was **`r avg2000`** metric tons per capita.
+6. The average emissions in 2000 was **`r avg_in_2000`** metric tons per capita.
 
 <br>
 
@@ -194,52 +211,113 @@ avg2000 <- emissions %>%
 
 ```{r question2, echo=FALSE}
 
+# This r chunk tidies up the emissions dataframe, joins it with the paris
+# dataframe, and then creates a plot of North American countries' CO2 emissions
+# over time.
+
+# First, tidying the emissions data by pivoting all the year columns into a new
+# column ("year") and assigning their values to another new column,
+# "emissions_per_capita". I use the names_prefix = "x" argument to uniformly
+# drop the x prefix from the years as they go from being column names to being
+# values in the "year" column. I use the type_convert() function to tell R to
+# guess the column types for me. This is important for two reasons: 1, it gets
+# rid of the "Parsed with..." message that would otherwise show up, and 2, it
+# formats the columns as appropriate types (which, as I learned after the
+# read.csv() vs read_csv() headache on question 1 mad lib 3, is always
+# important).
+
 emissions_tidy <- emissions %>% 
-pivot_longer(cols = c(x1960:x2019),
+  pivot_longer(cols = c(x1960:x2019),
              names_to = "year",
              values_to = "emissions_per_captita",
              names_prefix = "x") %>% 
   type_convert(col_types = cols())
   
+# Now, using a full_join() to attach the paris data to the tidy emissions data
+# by year and country code. I chose full_join() because I knew I would need
+# emissions data from all available years to make my plot, and that meant I had
+# to choose either left_join() or full_join() (an inner_join() or right_join()
+# would cut out data from years that weren't in the paris dataframe). I tried
+# both full_join() and left_join() to see what would be different between the
+# two, and chose full_join() because it preserved 8 rows of data that
+# left_join() didn't - and since I didn't know what those 8 observations were, I
+# thought it would probably be better to keep them in my dataframe just in case.
 
 joined <- emissions_tidy %>% 
-  left_join(paris,
+  full_join(paris,
              by = c("year", 
-                    "country_code" = "code"))
+                    "country_code" = "code")
+            )
 
-# x %>% 
-#   filter(year == "1960") %>% 
-#   arrange(emissions_per_captita)
-# 
-# x %>% 
-#   filter(year == "1960") %>% 
-#   arrange(desc(emissions_per_captita))
+# In order to use the date_of_effect variable in my plot as stipulated by the
+# question prompt, I'm assigning an object called "date" with the date of effect
+# of the Paris Treaty for the United States, Canada, and Mexico. I checked each
+# country's date of effect by first filtering for those three countries, and
+# then, noting that they were all the same, thought the easiest way to grab that
+# date and assign it to an object would be what I've done below: filter for just
+# that date, then slice the first row and pull the value for date_of_effect.
 
 date <- joined %>%
   filter(date_of_effect == "2016-11-04") %>%
   slice(1) %>%
   pull(date_of_effect)
 
+# The following code makes a plot of emissions per capita for the three North
+# American countries from 1960-2014
+
 joined %>% 
+  
+# Filtering for the three countries I want, and taking out observations were
+# emissions_per_capita is NA
+  
   filter(country_name == "United States" |
            country_name == "Canada" |
            country_name == "Mexico",
          emissions_per_captita != "NA") %>% 
-  ggplot(aes(x = year,
-             y = emissions_per_captita,
-             color = country_name,
-             group = country_name)) +
+
+# Plotting emissions by year, grouping and coloring by country; the group =
+# country_name is important for when I add a line to the points
+  
+    ggplot(
+      aes(x = year,
+          y = emissions_per_captita,
+          color = country_name,
+          group = country_name)
+      ) +
+  
+# Making it a scatterplot and connecting the dots by country  
+  
   geom_point() +
   geom_line() +
+  
+# Adding a line to show when the Paris Accord took effect. Using the "date"
+# object I created from the date_of_effect variable, formatting it to take just
+# the year and casting it as a numeric to match the type of the "year" column on
+# the x axis so it will show up in the appropriate place.
+  
   geom_vline(xintercept = as.numeric(format(date, "%Y")),
              linetype = "dotted") +
+  
+# Adding a title and labels for the x and y axes. The title has extra spaces in
+# it to center it over the plot; I probably could've accomplished the same thing
+# better in a different way, but this seemed to work fine.
+  
   labs(title = "   CO2 Emissions of North American Countries, 1960 - 2014",
        y = "Metric Tons Per Capita",
        x = "Year") +
+  
+# Adding a nice-looking name for the legend and changing the legend order to it
+# matches the order of the lines (from highest emissions to lowest)
+  
   scale_color_discrete(name = "Country",
                        breaks = c("United States",
                                   "Canada",
-                                  "Mexico")) +
+                                  "Mexico")
+                       ) +
+  
+# Customizing the x axis in size and adding labels for every decade (the default
+# labels and spacing wasn't quite as clear as I wanted to be)
+  
   scale_x_continuous(breaks = seq(1960,
                                   2020,
                                   by = 10),
@@ -251,7 +329,17 @@ joined %>%
                                 "2010",
                                 "2020")
                      ) +
+  
+# I love theme_classic(). It executes several lines of code to take away the
+# awful-looking default background, grid, plot outline, etc., all with just a
+# single line of code.
+  
   theme_classic() +
+  
+# Adding a label for the vertical line showing when the Paris Accord took
+# effect. Took a bit of trial and error to get the positioning to be exactly
+# what I wanted it to be, but we got there.
+  
   annotate("text",
            x = 2016, 
            y = 9.5, 
@@ -293,29 +381,58 @@ effect.
 
 ```{r question3, echo=FALSE}
 
+# This r chunk first modifies the paris data to give "treatment" to all
+# countries whose name begins with a vowel. It then makes a table out of the
+# modified data, using one country for each letter of the alphabet.
+
+# To give treatment, I first filter for only ratifying countries, then select
+# the two variables I care about (name and emissions). I then copy the data from
+# emissions into a new column, emissions_treatment, and rename the emissions
+# column as emissions_control.
+
 paris_experiment <- paris %>% 
   filter(kind == "Ratification") %>% 
   select(name, emissions) %>% 
   mutate(emissions_treatment = emissions) %>% 
   rename(emissions_control = emissions) %>% 
+  
+# Now for the fun part: I first use ifelse() to insert "?" into the
+# emissions_treatment column for all countries whose name does NOT start with A,
+# E, I, O, or U.
+  
   mutate(emissions_treatment = ifelse(startsWith(name, "A") |
                                         startsWith(name, "E") |
                                         startsWith(name, "I") |
                                         startsWith(name, "O") |
                                         startsWith(name, "U"),
                                       emissions_treatment,
-                                      "?")) %>% 
+                                      "?")
+         ) %>% 
+  
+# I then modify the function slightly to insert "?" into the emissions_control
+# column for all countries whose name DOES start with a vowel.
+  
   mutate(emissions_control = ifelse(startsWith(name, "A") |
                                         startsWith(name, "E") |
                                         startsWith(name, "I") |
                                         startsWith(name, "O") |
                                         startsWith(name, "U"),
-                                      "?",
-                                      emissions_control))
+                                     "?",
+                                     emissions_control)
+         )
 
+# Now I take the modified paris data (paris_experiment) and make a table out of
+# it
 
 paris_experiment %>%
-  filter(name == "Afghanistan" |
+ 
+# I wanted to show one country for each letter of the alphabet, and the best way
+# I knew to do that was to filter explicitly for the countries I wanted. I'm
+# sure there's a more concise way to code this, but I don't know what it is...
+# So I first made a table with all 177 countries, and then just took the first
+# one from each letter and put them in this filter for the final table.
+  
+   filter(name == "Afghanistan" |
            name == "Bahamas" |
            name == "Cabo Verde" |
            name == "Democratic People's Repulbic of Korea" |
@@ -338,21 +455,29 @@ paris_experiment %>%
            name == "Uganda" |
            name == "Vanuatu" |
            name == "Zambia") %>% 
+  
+# Making a nice-looking table, and adding a title and subtitle  
+  
   gt() %>% 
   tab_header(title = "Potential Outcomes for Paris Experiment on Emissions",
              subtitle = "For Selected Countries") %>% 
   
-# Adding spanner label for columns eval_under_control and eval_under_treatment  
+# Adding spanner label for columns emissions_control and emissions_treatment  
   
   tab_spanner(label = "Potential Outcomes",
               columns = vars(emissions_control,
                              emissions_treatment)
               ) %>% 
   
+# Adding one footnote to explain which countries are showing up in the table  
+  
   tab_footnote(footnote = "Only one country is shown for each letter of the 
                alphabet (the first one in alphabetical order)",
                locations = cells_column_labels("name")
                ) %>% 
+  
+# Adding another footnote to explain within the table what the treatment is and
+# to which countries it was given
   
   tab_footnote(footnote = "Treatment is receiving $1 billion to fight climate 
                change, and was given to all countries whose name begins with 
@@ -366,7 +491,8 @@ paris_experiment %>%
              emissions_control = "Emissions Under Control",
              emissions_treatment = "Emissions Under Treatment") %>% 
   
-# Center-aligning the values in each column  
+# Center-aligning the values in the two emissions columns (which leaves the
+# country names left-aligned)
   
   cols_align(align = "center",
              columns = vars(emissions_control,
